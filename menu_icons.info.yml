@@ -3,5 +3,7 @@ type: module
 description: Associates icons with menu items
 version: VERSION
 core: 8.x
-configure: admin/config/user-interface/menu_icons
+configure: menu_icons.settings
 
+dependencies:
+  - image

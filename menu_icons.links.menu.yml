@@ -1,0 +1,5 @@
+menu_icons.admin:
+  title: "Menu Icons"
+  description: "Configure global settings for Menu icons module"
+  parent: system.admin_config_ui
+  route_name: menu_icons.settings
