@@ -92,6 +92,14 @@ class MenuIconsSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('use_css'),
       '#description' => $this->t("Advanced: uncheck this box if you do not want to enable the Menu Icon style sheet that's provided by default. If you uncheck this box, you must provide your own CSS for Menu Icons to appear!"),
     );
+
+    $form['menu_icons_node_form'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Show menu icon selector on node form'),
+      '#default_value' => $config->get('node_form'),
+      '#description' => $this->t('Check this to display the menu icon selection fieldgroup on node edit forms.'),
+    );
+
     $form['array_filter'] = array('#type' => 'value', '#value' => TRUE);
 
     return parent::buildForm($form, $form_state);
@@ -115,6 +123,7 @@ class MenuIconsSettingsForm extends ConfigFormBase {
       ->set('position', $form_state->getValue('menu_icons_position'))
       ->set('title_display', $form_state->getValue('menu_icons_hide_titles'))
       ->set('use_css', $form_state->getValue('menu_icons_use_css'))
+      ->set('node_form', $form_state->getValue('menu_icons_node_form'))
       ->save();
     parent::submitForm($form, $form_state);
   }

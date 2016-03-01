@@ -108,6 +108,9 @@ function menu_icons_form_menu_link_content_form_alter(&$form, \Drupal\Core\Form\
   if (in_array($form_id, array('image_style_form', 'image_effect_form', 'image_style_revert_form', 'image_style_delete_form'))) {
     $form['actions']['submit']['#submit'][] = 'menu_icons_css_generate';
   }
+
+  // Last but not least, invoke any alter hooks to override any/all of the new form widgets.
+  \Drupal::moduleHandler()->alter('menu_icons_menu_link_content_form', $form, $form_state, $form_id);
 }
 
 /**
@@ -191,7 +194,9 @@ function menu_icons_form_submit(array $form, FormStateInterface $form_state) {
  * @see menu_icons_node_submit()
  */
 function menu_icons_form_node_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
-  if (isset($form['advanced'])) {
+  $node_form = \Drupal::config('menu_icons.settings')->get('node_form');
+
+  if ($node_form && isset($form['advanced'])) {
     if ($form['menu']['link']['entity_id']['#value']) {
       $options = db_query('SELECT link__options FROM {menu_link_content_data} WHERE id = :id',
         array(':id' =>  $form['menu']['link']['entity_id']['#value']))->fetchAssoc();
@@ -258,6 +263,9 @@ function menu_icons_form_node_form_alter(&$form, \Drupal\Core\Form\FormStateInte
         $form['actions'][$action]['#submit'][] = 'menu_icons_form_node_form_submit';
       }
     }
+
+    // Last but not least, invoke any alter hooks to override any/all of the new form widgets.
+    \Drupal::moduleHandler()->alter('menu_icons_node_form', $form, $form_state, $form_id);
   }
 }
 
