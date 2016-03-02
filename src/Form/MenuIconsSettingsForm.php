@@ -52,7 +52,7 @@ class MenuIconsSettingsForm extends ConfigFormBase {
         '#type' => 'select',
         '#title' => t('Image default style'),
         '#default_value' => $config->get('style'),
-        '#description' => $this->t('Choose a default !link to be used for menu icons. This setting can be overwritten per menu item.', array('!link' => \Drupal::l(t('Image style'), new Url('entity.image_style.collection')))),
+        '#description' => $this->t('Choose a default %link to be used for menu icons. This setting can be overwritten per menu item.', array('%link' => \Drupal::l(t('Image style'), new Url('entity.image_style.collection')))),
         '#required' => FALSE,
         '#options' => $options,
       );

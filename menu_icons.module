@@ -4,11 +4,6 @@
  * Module to associate icons with menu items
  */
 
-/**
- * @file
- * Allows users to create and organize related content in an outline.
- */
-
 use Drupal\Component\Utility\String;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Template\Attribute;
@@ -116,7 +111,7 @@ function menu_icons_form_menu_link_content_form_alter(&$form, \Drupal\Core\Form\
 /**
  * Process the submitted form
  */
-function menu_icons_form_submit(array $form, FormStateInterface $form_state) {
+function menu_icons_form_submit(array $form, $form_state) {
   $menu_entity = $form_state->getFormObject()->getEntity();
   if ($menu_entity instanceof \Drupal\Core\Entity\EntityInterface) {
     $mlid = $menu_entity->id();
@@ -144,7 +139,7 @@ function menu_icons_form_submit(array $form, FormStateInterface $form_state) {
     $path = $filename;
   }
 
-  $options = unserialize(db_query('SELECT link__options FROM {menu_link_content_data} WHERE id = :id', array(':id' => $mlid)));
+  $options = unserialize(db_query('SELECT link__options FROM {menu_link_content_data} WHERE id = :id', array(':id' => $mlid))->fetchField());
   $options['menu_icon'] = array(
     'enable' => $form_state->getValue('use_icon_logo'),
     'path' => $path,
@@ -442,18 +437,30 @@ function menu_icons_node_save($node) {
 
 
 /**
- * Implements hook_init().
+ * Implements hook_css_alter().
+ *
+ * @param array $attachments
  */
-function menu_icons_page_build(&$page) {
+function menu_icons_css_alter(&$css, \Drupal\Core\Asset\AttachedAssetsInterface $assets) {
   $cssfile = 'public://css/menu_icons.css';
-  $css_path = file_create_url($cssfile);
   $menu_css = \Drupal::config('menu_icons.settings')->get('use_css');
-  if ( $menu_css && file_exists($cssfile)){
+  if ($menu_css && file_exists($cssfile)){
     $css_path = file_create_url($cssfile);
+    if (!empty($css_path)) {
+      $css[$css_path] = array(
+        'weight' => CSS_COMPONENT,
+        'group' => CSS_AGGREGATE_DEFAULT,
+        'type' => 'file',
+        'data' => $css_path,
+        'media' => 'all',
+        'preprocess' => TRUE,
+        'browsers' => array(
+          'IE' => TRUE,
+          '!IE' => TRUE,
+        ),
+      );
+    }
   }
-  $page['#attached']['css'] = array(
-    $css_path => array(),
-  );
 }
 
 /**
@@ -467,7 +474,7 @@ function menu_icons_css_generate() {
   $pos = \Drupal::config('menu_icons.settings')->get('position');
   $absolute = \Drupal::config('menu_icons.settings')->get('title_display');
 
-  foreach ($result as $item) {
+  while ($item = $result->fetchObject()) {
     $options = unserialize($item->link__options);
 
     if (isset($options['menu_icon']) && $options['menu_icon']['enable'] && !empty($options['menu_icon']['path']) && file_exists($options['menu_icon']['path'])) {
@@ -489,18 +496,18 @@ function menu_icons_css_generate() {
       $stream_wrapper_manager = \Drupal::service('stream_wrapper_manager');
       $wrapper = $stream_wrapper_manager->getViaScheme(file_uri_scheme($image_path));
       $image_url = '/' . $wrapper->getDirectoryPath() . '/' . file_uri_target($image_path);
-      $size = $pos == 'right' || $pos == 'left' ? $image->getWidth() : $image->getHeight();
+      $size = ($pos == 'right' || $pos == 'left') ? $image->getWidth() : $image->getHeight();
       // Support private filesystem
       $menu_css = array(
         '#theme' => 'menu_icons_css_item',
-        '#mlid' => $item->mlid,
+        '#mlid' => $item->id,
         '#path' => $image_url,
         '#size' => $size,
         '#height' => $image->getHeight(),
         '#pos' => $pos,
         '#source' => $source_uri
       );
-      $css .= drupal_render($menu_css);
+      $css .= \Drupal::service('renderer')->render($menu_css);
     }
   }
   $csspath = 'public://css';
@@ -517,14 +524,32 @@ function menu_icons_css_generate() {
 /**
  * Implements hook_theme().
  */
-function menu_icons_theme() {
+function menu_icons_theme($existing, $type, $theme, $path) {
   return array(
     'menu_icons_css_item' => array(
       'variables' => array('mlid' => NULL, 'path' => NULL, 'size' => NULL, 'height' => NULL, 'pos' => NULL, 'source' => NULL),
-      'template' => 'menu-icons-css-item',
-      'file' => 'menu_icon.theme.inc',
     ),
   );
+}
+
+/**
+ * Prepares variables for aggregator item templates.
+ *
+ * Default template: aggregator-item.html.twig.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - aggregator_item: An individual feed item for display on the aggregator
+ *     page.
+ */
+function template_preprocess_menu_icons_css_item(&$variables) {
+  global $base_url;
+  $variables['mlid'] = $variables['mlid'];
+  $variables['path'] = $base_url . $variables['path'];
+  $variables['size'] = $variables['size'];
+  $variables['height'] = $variables['height'];
+  $variables['pos'] = $variables['pos'];
+  $variables['source'] = $variables['source'];
 }
 
 /**
@@ -609,4 +634,12 @@ function menu_icon_link($variables) {
     }
   }
   return '<a href="' . check_plain(url($variables['path'], $variables['options'])) . '"' . new Attribute($variables['options']['attributes']) . '>' . ($variables['options']['html'] ? $variables['text'] : check_plain($variables['text'])) . '</a>';
+}
+
+/**
+ * Implements template_preprocess_menu().
+ *
+ * @param $vars
+ */
+function menu_icons_preprocess_menu(&$vars) {
 }
